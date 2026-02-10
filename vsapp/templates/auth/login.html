@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Voter Login - Campus E-Voting System{% endblock %}
+
+{% block content %}
+<section class="min-h-screen flex items-center justify-center py-12 px-4">
+    <div class="max-w-md w-full">
+        <div class="text-center mb-8 fade-in stagger-1">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl shadow-xl mb-4">
+                <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-900 mb-2 serif-title">Voter Authentication</h1>
+            <p class="text-slate-600">Secure login to cast your vote</p>
+        </div>
+        
+        <div class="glass-effect rounded-2xl shadow-2xl p-8 fade-in stagger-2">
+            <!-- Alert Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form id="login-form" method="POST" action="" class="space-y-6">
+                {% csrf_token %}
+                <div>
+                    <label for="matric" class="block text-sm font-semibold text-slate-700 mb-2">
+                        Matric Number / Student Email
+                    </label>
+                    <input 
+                        type="text" 
+                        id="matric" 
+                        name="matric_number" 
+                        required
+                        class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-900 focus:outline-none transition"
+                        placeholder="e.g., 2020/12345 or student@university.edu"
+                    >
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-semibold text-slate-700 mb-2">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required
+                            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-900 focus:outline-none transition"
+                            placeholder="Enter your password"
+                        >
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between text-sm">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" class="w-4 h-4 text-blue-900 border-slate-300 rounded focus:ring-blue-900">
+                        <span class="ml-2 text-slate-600">Remember me</span>
+                    </label>
+                    <a href="/forgot-password" class="text-blue-900 hover:text-blue-700 font-semibold">
+                        Forgot password?
+                    </a>
+                </div>
+                
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-sm text-blue-800">
+                            <strong>Important:</strong> You can only vote once. Make sure you're ready before proceeding.
+                        </p>
+                    </div>
+                </div>
+                
+                <button 
+                    type="submit" 
+                    class="w-full btn-primary text-white py-3.5 rounded-xl font-semibold text-lg shadow-lg inline-flex items-center justify-center"
+                >
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    Proceed to Vote
+                </button>
+            </form>
+            
+            <div class="mt-6 pt-6 border-t border-slate-200 text-center">
+                <p class="text-sm text-slate-600">
+                    Don't have an account? 
+                    <a href="{% url 'register_voter' %}" class="text-blue-900 font-semibold hover:text-blue-700">Register Here</a>
+                </p>
+            </div>
+        </div>
+        
+        <!-- OTP Verification Modal (Hidden by default) -->
+        <div id="otp-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center z-50">
+            <div class="glass-effect rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 fade-in">
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
+                        <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-2">Verify OTP</h3>
+                    <p class="text-slate-600">Enter the 6-digit code sent to your email</p>
+                </div>
+                
+                <form class="space-y-6">
+                    <div class="flex justify-center gap-3">
+                        <input type="text" maxlength="1" class="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-blue-900 focus:outline-none">
+                        <input type="text" maxlength="1" class="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-blue-900 focus:outline-none">
+                        <input type="text" maxlength="1" class="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-blue-900 focus:outline-none">
+                        <input type="text" maxlength="1" class="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-blue-900 focus:outline-none">
+                        <input type="text" maxlength="1" class="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-blue-900 focus:outline-none">
+                        <input type="text" maxlength="1" class="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-blue-900 focus:outline-none">
+                    </div>
+                    
+                    <button type="submit" class="w-full btn-accent text-white py-3 rounded-xl font-semibold shadow-lg">
+                        Verify & Continue
+                    </button>
+                    
+                    <p class="text-center text-sm text-slate-600">
+                        Didn't receive code? 
+                        <button type="button" class="text-blue-900 font-semibold hover:text-blue-700">Resend OTP</button>
+                    </p>
+                </form>
+            </div>
+        </div>
+        
+        <div class="mt-8 text-center fade-in stagger-3">
+            <div class="inline-flex items-center justify-center space-x-2 text-sm text-slate-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <span>Secured with 256-bit encryption</span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Campus E-Voting System{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative overflow-hidden py-20 lg:py-32">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+            <div class="fade-in stagger-1">
+                <div class="inline-block bg-emerald-100 text-emerald-800 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+                    🔒 Secure & Transparent Voting
+                </div>
+                <h1 class="text-5xl lg:text-6xl font-bold text-slate-900 mb-6 serif-title leading-tight">
+                    Campus Electronic Voting System
+                </h1>
+                <p class="text-xl text-slate-600 mb-8 leading-relaxed">
+                    Experience democracy reimagined with our secure, transparent, and real-time monitoring system. 
+                    Every vote counts, every result is verifiable.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'register_voter' %}" class="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-xl inline-flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                            </svg>
+                            Register to Vote
+                        </a>
+                        <a href="{% url 'login' %}" class="btn-primary text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-xl inline-flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Cast Your Vote
+                        </a>
+                    {% else %}
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
+                            <svg class="w-12 h-12 text-emerald-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-emerald-800 mb-1">Welcome back, {{ user.first_name|default:user.username }}!</h3>
+                            <p class="text-emerald-600">You are logged in and ready to vote.</p>
+                        </div>
+                    {% endif %}
+                    <a href="{% url 'live_results' %}" class="bg-white text-slate-800 px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition inline-flex items-center justify-center border-2 border-slate-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        View Live Results
+                    </a>
+                </div>
+            </div>
+            
+            <div class="fade-in stagger-2 hidden lg:block">
+                <div class="relative">
+                    <div class="glass-effect rounded-3xl p-8 shadow-2xl">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+                                <span class="text-blue-900 font-semibold">Total Registered Voters</span>
+                                <span class="text-2xl font-bold text-blue-900">{{ total_voters }}</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-emerald-50 rounded-xl">
+                                <span class="text-emerald-900 font-semibold">Votes Cast Today</span>
+                                <span class="text-2xl font-bold text-emerald-900">{{ total_votes }}</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-amber-50 rounded-xl">
+                                <span class="text-amber-900 font-semibold">Active Elections</span>
+                                <span class="text-2xl font-bold text-amber-900">{{ active_elections_count }}</span>
+                            </div>
+                            <div class="p-4 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl text-white">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-semibold">Voter Turnout</span>
+                                    <span class="text-xl font-bold">53.5%</span>
+                                </div>
+                                <div class="w-full bg-blue-800 rounded-full h-2">
+                                    <div class="bg-emerald-400 h-2 rounded-full" style="width: 53.5%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -top-6 -right-6 w-24 h-24 bg-emerald-400 rounded-full opacity-20 blur-2xl"></div>
+                    <div class="absolute -bottom-6 -left-6 w-32 h-32 bg-blue-400 rounded-full opacity-20 blur-2xl"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16 fade-in stagger-1">
+            <h2 class="text-4xl font-bold text-slate-900 mb-4 serif-title">Why Choose Our System?</h2>
+            <p class="text-xl text-slate-600 max-w-2xl mx-auto">
+                Built with security, transparency, and user experience at its core
+            </p>
+        </div>
+        
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="fade-in stagger-2 bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl hover:shadow-xl transition">
+                <div class="w-14 h-14 bg-blue-900 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Secure Authentication</h3>
+                <p class="text-slate-600 leading-relaxed">
+                    Multi-factor authentication ensures only verified students can cast votes
+                </p>
+            </div>
+            
+            <div class="fade-in stagger-3 bg-gradient-to-br from-emerald-50 to-emerald-100 p-8 rounded-2xl hover:shadow-xl transition">
+                <div class="w-14 h-14 bg-emerald-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">One Voter, One Vote</h3>
+                <p class="text-slate-600 leading-relaxed">
+                    Blockchain-verified system prevents duplicate voting and fraud
+                </p>
+            </div>
+            
+            <div class="fade-in stagger-4 bg-gradient-to-br from-amber-50 to-amber-100 p-8 rounded-2xl hover:shadow-xl transition">
+                <div class="w-14 h-14 bg-amber-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Real-Time Results</h3>
+                <p class="text-slate-600 leading-relaxed">
+                    Watch election results update live with full transparency
+                </p>
+            </div>
+            
+            <div class="fade-in stagger-4 bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-2xl hover:shadow-xl transition">
+                <div class="w-14 h-14 bg-purple-600 rounded-xl flex items-center justify-center mb-6 shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Audit & Transparency</h3>
+                <p class="text-slate-600 leading-relaxed">
+                    Complete audit trails ensure accountability and trust
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-slate-900 mb-4 serif-title">How It Works</h2>
+            <p class="text-xl text-slate-600 max-w-2xl mx-auto">
+                Voting made simple in three easy steps
+            </p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8 relative">
+            <div class="text-center fade-in stagger-1">
+                <div class="relative inline-block mb-6">
+                    <div class="w-20 h-20 bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl">
+                        <span class="text-3xl font-bold text-white">1</span>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-3">Verify Identity</h3>
+                <p class="text-slate-600 leading-relaxed">
+                    Log in securely using your student credentials and receive an OTP for verification
+                </p>
+            </div>
+            
+            <div class="text-center fade-in stagger-2">
+                <div class="relative inline-block mb-6">
+                    <div class="w-20 h-20 bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl flex items-center justify-center shadow-xl">
+                        <span class="text-3xl font-bold text-white">2</span>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-3">Cast Your Vote</h3>
+                <p class="text-slate-600 leading-relaxed">
+                    Review candidates carefully and select your preferred choice for each position
+                </p>
+            </div>
+            
+            <div class="text-center fade-in stagger-3">
+                <div class="relative inline-block mb-6">
+                    <div class="w-20 h-20 bg-gradient-to-br from-amber-600 to-amber-500 rounded-2xl flex items-center justify-center shadow-xl">
+                        <span class="text-3xl font-bold text-white">3</span>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-3">Track Results</h3>
+                <p class="text-slate-600 leading-relaxed">
+                    Monitor live election results and verify your vote was securely recorded
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-20 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-4xl lg:text-5xl font-bold text-white mb-6 serif-title">Ready to Vote?</h2>
+        <p class="text-xl text-blue-100 mb-8 leading-relaxed">
+            Your voice matters. Participate in shaping the future of your campus.
+        </p>
+        {% if not user.is_authenticated %}
+            <a href="{% url 'login' %}" class="btn-accent text-white px-10 py-4 rounded-xl font-semibold text-lg shadow-2xl inline-flex items-center justify-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                </svg>
+                Get Started Now
+            </a>
+        {% else %}
+            <div class="bg-blue-800 bg-opacity-50 backdrop-blur-sm border border-blue-700 rounded-xl p-6 inline-block">
+                <svg class="w-12 h-12 text-blue-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h3 class="text-xl font-semibold text-white mb-1">You're all set!</h3>
+                <p class="text-blue-200">Proceed to cast your vote when ready.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

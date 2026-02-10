@@ -1,0 +1,101 @@
+<nav class="glass-effect sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 serif-title">Campus E-Vote</h1>
+                    <p class="text-xs text-slate-500 font-medium">Transparent & Secure</p>
+                </div>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="{% url 'index' %}" class="nav-link text-slate-700 font-medium hover:text-blue-900">Home</a>
+                <a href="{% url 'live_results' %}" class="nav-link text-slate-700 font-medium hover:text-blue-900">Live Results</a>
+                <a href="{% url 'about' %}" class="nav-link text-slate-700 font-medium hover:text-blue-900">About</a>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'register_voter' %}" class="nav-link text-slate-700 font-medium hover:text-blue-900">Register</a>
+                    <a href="{% url 'login' %}" class="btn-primary text-white px-6 py-2.5 rounded-lg font-semibold shadow-md">
+                        Vote Now
+                    </a>
+                {% else %}
+                    <span class="text-slate-600 font-medium">
+                        Welcome, {{ user.first_name|default:user.username }}
+                    </span>
+                    <a href="{% url 'vote' %}" class="btn-primary text-white px-6 py-2.5 rounded-lg font-semibold shadow-md mr-4">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Vote
+                    </a>
+                    <a href="{% url 'logout' %}" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-semibold shadow-md transition ml-4">
+                        Logout
+                    </a>
+                {% endif %}
+            </div>
+            
+            <button id="mobile-menu-button" class="md:hidden text-slate-700" onclick="toggleMobileMenu()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="md:hidden hidden bg-white border-t border-slate-200 shadow-lg">
+            <div class="px-4 py-6 space-y-4">
+                <a href="{% url 'index' %}" class="block text-slate-700 font-medium hover:text-blue-900 py-2">Home</a>
+                <a href="{% url 'live_results' %}" class="block text-slate-700 font-medium hover:text-blue-900 py-2">Live Results</a>
+                <a href="{% url 'about' %}" class="block text-slate-700 font-medium hover:text-blue-900 py-2">About</a>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'register_voter' %}" class="block text-slate-700 font-medium hover:text-blue-900 py-2">Register</a>
+                    <a href="{% url 'login' %}" class="block btn-primary text-white px-4 py-2 rounded-lg font-semibold shadow-md text-center">
+                        Vote Now
+                    </a>
+                {% else %}
+                    <div class="text-slate-600 font-medium py-2 border-b border-slate-200 mb-4">
+                        Welcome, {{ user.first_name|default:user.username }}
+                    </div>
+                    <a href="{% url 'vote' %}" class="block btn-primary text-white px-4 py-2 rounded-lg font-semibold shadow-md text-center mb-4">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Vote
+                    </a>
+                    <a href="{% url 'logout' %}" class="block bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold shadow-md text-center transition">
+                        Logout
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script>
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    const button = document.getElementById('mobile-menu-button');
+    
+    if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        // Change hamburger to X
+        button.innerHTML = `
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        `;
+    } else {
+        menu.classList.add('hidden');
+        // Change X back to hamburger
+        button.innerHTML = `
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        `;
+    }
+}
+</script>

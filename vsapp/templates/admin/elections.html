@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Elections - Admin Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: #0f172a;
+        }
+        .serif-title {
+            font-family: 'DM Serif Display', serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-900">
+    {% include 'components/admin_sidebar.html' %}
+    
+    <div class="ml-64 min-h-screen">
+        <!-- Top Bar -->
+        <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-40">
+            <div class="px-8 py-4 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-white serif-title">Manage Elections</h1>
+                    <p class="text-slate-400 text-sm">Create and manage election campaigns</p>
+                </div>
+                <button onclick="showCreateModal()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Create New Election
+                </button>
+            </div>
+        </header>
+        
+        <main class="p-8">
+            <!-- Elections List -->
+            <div class="space-y-6">
+                {% for election in elections %}
+                <div class="bg-slate-800 border-2 {% if election.status == 'active' %}border-emerald-600{% elif election.status == 'closed' %}border-red-600{% else %}border-slate-600{% endif %} rounded-xl p-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <h2 class="text-2xl font-bold text-white serif-title">{{ election.title }}</h2>
+                                <span class="px-3 py-1 {% if election.status == 'active' %}bg-emerald-900 bg-opacity-30 text-emerald-400{% elif election.status == 'closed' %}bg-red-900 bg-opacity-30 text-red-400{% else %}bg-slate-600 text-slate-400{% endif %} rounded-full text-sm font-semibold">
+                                    {{ election.get_status_display }}
+                                </span>
+                            </div>
+                            <p class="text-slate-400 mb-4">{{ election.description }}</p>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="bg-slate-700 rounded-lg p-3">
+                                    <p class="text-xs text-slate-400 mb-1">Start Date</p>
+                                    <p class="text-white font-semibold">{{ election.start_date|date:"M j, Y" }}</p>
+                                </div>
+                                <div class="bg-slate-700 rounded-lg p-3">
+                                    <p class="text-xs text-slate-400 mb-1">End Date</p>
+                                    <p class="text-white font-semibold">{{ election.end_date|date:"M j, Y" }}</p>
+                                </div>
+                                <div class="bg-slate-700 rounded-lg p-3">
+                                    <p class="text-xs text-slate-400 mb-1">Positions</p>
+                                    <p class="text-white font-semibold">{{ election.positions.count }}</p>
+                                </div>
+                                <div class="bg-slate-700 rounded-lg p-3">
+                                    <p class="text-xs text-slate-400 mb-1">Candidates</p>
+                                    <p class="text-white font-semibold">{{ election.positions.all|length }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if election.status == 'active' %}
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between text-sm mb-2">
+                            <span class="text-slate-400">Voter Turnout</span>
+                            <span class="text-white font-semibold">{{ election.total_votes }} / {{ total_voters }} ({{ election.turnout_percentage|floatformat:1 }}%)</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-3">
+                            <div class="bg-emerald-500 h-3 rounded-full" style="width: {{ election.turnout_percentage }}%"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex flex-wrap gap-3">
+                        <a href="{% url 'live_results' %}?election={{ election.id }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition">
+                            View Results
+                        </a>
+                        <button onclick="showEditModal('{{ election.id }}', '{{ election.title }}', '{{ election.description }}', '{{ election.start_date|date:"Y-m-d\TH:i" }}', '{{ election.end_date|date:"Y-m-d\TH:i" }}', '{{ election.status }}')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition">
+                            Edit Election
+                        </button>
+                        {% if election.status == 'active' %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="update_status" value="1">
+                            <input type="hidden" name="election_id" value="{{ election.id }}">
+                            <input type="hidden" name="status" value="closed">
+                            <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold transition">
+                                Close Election
+                            </button>
+                        </form>
+                        {% elif election.status == 'closed' %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="update_status" value="1">
+                            <input type="hidden" name="election_id" value="{{ election.id }}">
+                            <input type="hidden" name="status" value="active">
+                            <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition">
+                                Reopen Election
+                            </button>
+                        </form>
+                        {% endif %}
+                        <button onclick="confirmDelete('{{ election.id }}', '{{ election.title }}')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition">
+                            Delete Election
+                        </button>
+                        <button class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition">
+                            <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            Export Data
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
+                    <svg class="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    <h3 class="text-xl font-bold text-white mb-2">No Elections Found</h3>
+                    <p class="text-slate-400">Create your first election to get started.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
+    
+    <!-- Create Election Modal -->
+    <div id="create-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white serif-title">Create New Election</h2>
+                <button onclick="hideCreateModal()" class="text-slate-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="create" value="1">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Election Title</label>
+                    <input 
+                        type="text" 
+                        name="title"
+                        class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+                        placeholder="e.g., Student Union Elections 2026"
+                        required
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Description</label>
+                    <textarea 
+                        rows="3"
+                        name="description"
+                        class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+                        placeholder="Brief description of the election"
+                        required
+                    ></textarea>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">Start Date & Time</label>
+                        <input 
+                            type="datetime-local" 
+                            name="start_date"
+                            class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
+                            required
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">End Date & Time</label>
+                        <input 
+                            type="datetime-local" 
+                            name="end_date"
+                            class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
+                            required
+                        >
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Election Status</label>
+                    <select class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none">
+                        <option>Draft</option>
+                        <option>Scheduled</option>
+                        <option>Active</option>
+                    </select>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="hideCreateModal()" class="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition">
+                        Create Election
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Edit Election Modal -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white serif-title">Edit Election</h2>
+                <button onclick="hideEditModal()" class="text-slate-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <input type="hidden" name="update" value="1">
+                <input type="hidden" name="election_id" id="edit-election-id">
+                
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Election Title</label>
+                    <input 
+                        type="text" 
+                        name="title"
+                        id="edit-title"
+                        class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+                        required
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Description</label>
+                    <textarea 
+                        rows="3"
+                        name="description"
+                        id="edit-description"
+                        class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
+                        required
+                    ></textarea>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">Start Date & Time</label>
+                        <input 
+                            type="datetime-local" 
+                            name="start_date"
+                            id="edit-start-date"
+                            class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
+                            required
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">End Date & Time</label>
+                        <input 
+                            type="datetime-local" 
+                            name="end_date"
+                            id="edit-end-date"
+                            class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none"
+                            required
+                        >
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-slate-300 mb-2">Election Status</label>
+                    <select name="status" id="edit-status" class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none">
+                        <option value="draft">Draft</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="active">Active</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="hideEditModal()" class="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition">
+                        Update Election
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8 max-w-md w-full">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-red-900 bg-opacity-30 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2 serif-title">Delete Election</h2>
+                <p class="text-slate-300">Are you sure you want to delete <strong id="delete-election-title"></strong>? This action cannot be undone.</p>
+            </div>
+            
+            <form method="post" class="flex gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="delete" value="1">
+                <input type="hidden" name="election_id" id="delete-election-id">
+                
+                <button type="button" onclick="hideDeleteModal()" class="flex-1 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition">
+                    Delete Election
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        function showCreateModal() {
+            document.getElementById('create-modal').classList.remove('hidden');
+        }
+        
+        function hideCreateModal() {
+            document.getElementById('create-modal').classList.add('hidden');
+        }
+        
+        function showEditModal(id, title, description, startDate, endDate, status) {
+            document.getElementById('edit-election-id').value = id;
+            document.getElementById('edit-title').value = title;
+            document.getElementById('edit-description').value = description;
+            document.getElementById('edit-start-date').value = startDate;
+            document.getElementById('edit-end-date').value = endDate;
+            document.getElementById('edit-status').value = status;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+        
+        function hideEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+        
+        function confirmDelete(id, title) {
+            document.getElementById('delete-election-id').value = id;
+            document.getElementById('delete-election-title').textContent = title;
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+        
+        function hideDeleteModal() {
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
