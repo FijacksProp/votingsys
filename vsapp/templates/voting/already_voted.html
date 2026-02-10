@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Already Voted - {{ election.title }}{% endblock %}
+
+{% block content %}
+<section class="min-h-screen flex items-center justify-center py-12 px-4">
+    <div class="max-w-2xl w-full">
+        <div class="glass-effect rounded-2xl shadow-2xl p-8 md:p-12 text-center fade-in">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-amber-100 rounded-full mb-6 stagger-1 fade-in">
+                <svg class="w-12 h-12 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            
+            <h1 class="text-3xl font-bold text-slate-900 mb-4 serif-title stagger-2 fade-in">
+                You Already Voted
+            </h1>
+            
+            <p class="text-lg text-slate-600 mb-8 leading-relaxed stagger-3 fade-in">
+                Our records show you have already voted in <strong>{{ election.title }}</strong>.
+            </p>
+            
+            <div class="bg-slate-50 rounded-xl p-6 mb-8 text-left stagger-4 fade-in">
+                <h3 class="text-lg font-bold text-slate-900 mb-4">Vote Confirmation</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600 font-medium">Verification Code:</span>
+                        <span class="text-slate-900 font-mono font-semibold">
+                            {% if record %}{{ record.verification_code }}{% else %}N/A{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-600 font-medium">Voted At:</span>
+                        <span class="text-slate-900 font-semibold">
+                            {% if record %}{{ record.voted_at|date:"M j, Y - H:i" }}{% else %}N/A{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-4 stagger-4 fade-in">
+                <a href="{% url 'live_results' %}?election={{ election.id }}" class="flex-1 btn-primary text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg inline-flex items-center justify-center">
+                    View Results
+                </a>
+                <a href="{% url 'index' %}" class="flex-1 bg-white border-2 border-slate-300 text-slate-700 px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transition inline-flex items-center justify-center">
+                    Return Home
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

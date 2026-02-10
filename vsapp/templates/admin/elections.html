@@ -66,7 +66,7 @@
                                 </div>
                                 <div class="bg-slate-700 rounded-lg p-3">
                                     <p class="text-xs text-slate-400 mb-1">Candidates</p>
-                                    <p class="text-white font-semibold">{{ election.positions.all|length }}</p>
+                                    <p class="text-white font-semibold">{{ election.candidate_count }}</p>
                                 </div>
                             </div>
                         </div>
@@ -76,10 +76,10 @@
                     <div class="mb-4">
                         <div class="flex items-center justify-between text-sm mb-2">
                             <span class="text-slate-400">Voter Turnout</span>
-                            <span class="text-white font-semibold">{{ election.total_votes }} / {{ total_voters }} ({{ election.turnout_percentage|floatformat:1 }}%)</span>
+                            <span class="text-white font-semibold">{{ election.total_votes }} / {{ total_voters }} ({{ election.voter_turnout|floatformat:1 }}%)</span>
                         </div>
                         <div class="w-full bg-slate-700 rounded-full h-3">
-                            <div class="bg-emerald-500 h-3 rounded-full" style="width: {{ election.turnout_percentage }}%"></div>
+                            <div class="bg-emerald-500 h-3 rounded-full" style="width: {{ election.voter_turnout }}%"></div>
                         </div>
                     </div>
                     {% endif %}
@@ -88,7 +88,7 @@
                         <a href="{% url 'live_results' %}?election={{ election.id }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition">
                             View Results
                         </a>
-                        <button onclick="showEditModal('{{ election.id }}', '{{ election.title }}', '{{ election.description }}', '{{ election.start_date|date:"Y-m-d\TH:i" }}', '{{ election.end_date|date:"Y-m-d\TH:i" }}', '{{ election.status }}')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition">
+                        <button onclick="showEditModal('{{ election.id }}', '{{ election.title|escapejs }}', '{{ election.description|escapejs }}', '{{ election.start_date|date:"Y-m-d\\TH:i" }}', '{{ election.end_date|date:"Y-m-d\\TH:i" }}', '{{ election.status }}')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition">
                             Edit Election
                         </button>
                         {% if election.status == 'active' %}
@@ -196,10 +196,10 @@
                 
                 <div>
                     <label class="block text-sm font-semibold text-slate-300 mb-2">Election Status</label>
-                    <select class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none">
-                        <option>Draft</option>
-                        <option>Scheduled</option>
-                        <option>Active</option>
+                    <select name="status" class="w-full px-4 py-3 rounded-lg bg-slate-700 border-2 border-slate-600 text-white focus:border-blue-500 focus:outline-none">
+                        <option value="draft">Draft</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="active">Active</option>
                     </select>
                 </div>
                 

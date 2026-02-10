@@ -1,0 +1,322 @@
+<div
+    id="live-results-content"
+    class="max-w-7xl mx-auto"
+    data-end-ts="{{ end_timestamp }}"
+    hx-get="{% url 'live_results' %}?election={{ selected_election.id }}"
+    hx-trigger="every 10s"
+    hx-swap="outerHTML"
+>
+    <!-- Header -->
+    <div class="glass-effect rounded-2xl shadow-lg p-4 md:p-6 mb-8 fade-in stagger-1">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900 mb-2 serif-title">Live Election Results</h1>
+                <p class="text-slate-600">Real-time monitoring of election results</p>
+            </div>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <!-- Election Selector -->
+                {% if active_elections|length > 1 %}
+                <div class="relative w-full sm:w-auto">
+                    <select onchange="changeElection(this.value)" class="appearance-none bg-white border border-slate-300 rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full">
+                        {% for election in active_elections %}
+                        <option value="{{ election.id }}" {% if election.id == selected_election.id %}selected{% endif %}>
+                            {{ election.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="flex items-center space-x-2 bg-emerald-50 px-3 py-2 rounded-xl">
+                    <span class="pulse-dot w-2 h-2 bg-emerald-500 rounded-full"></span>
+                    <span class="text-emerald-800 font-semibold text-sm">Live Updates</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md fade-in stagger-2">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-slate-600 font-semibold text-sm md:text-base">Total Voters</h3>
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-blue-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 4 4 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-2xl md:text-3xl font-bold text-slate-900">{{ total_voters }}</p>
+            <p class="text-xs md:text-sm text-slate-500 mt-1">Registered students</p>
+        </div>
+        
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md fade-in stagger-2">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-slate-600 font-semibold text-sm md:text-base">Votes Cast</h3>
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-2xl md:text-3xl font-bold text-slate-900">{{ total_votes }}</p>
+            <p class="text-xs md:text-sm text-emerald-600 mt-1 font-semibold">Live count</p>
+        </div>
+        
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md fade-in stagger-3">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-slate-600 font-semibold text-sm md:text-base">Turnout Rate</h3>
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-2xl md:text-3xl font-bold text-slate-900">{{ selected_election.voter_turnout|floatformat:1 }}%</p>
+            <div class="w-full bg-slate-200 rounded-full h-2 mt-3">
+                <div class="bg-amber-500 h-2 rounded-full transition-all" style="width: {{ selected_election.voter_turnout }}%"></div>
+            </div>
+        </div>
+        
+        <div class="glass-effect rounded-xl p-4 md:p-6 shadow-md fade-in stagger-3 countdown-container">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-slate-600 font-semibold text-sm md:text-base">Time Remaining</h3>
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-xl md:text-3xl font-bold text-slate-900">
+                {% if selected_election.end_date > now %}
+                    <span id="countdown-timer">Loading...</span>
+                {% else %}
+                    Election Ended
+                {% endif %}
+            </p>
+            <p class="text-xs md:text-sm text-slate-500 mt-1">Until polls close</p>
+        </div>
+    </div>
+    
+    {% for position in positions %}
+    <!-- {{ position.title }} Results -->
+    <div class="glass-effect rounded-2xl shadow-lg p-4 md:p-8 mb-8 fade-in stagger-{{ forloop.counter|add:2 }}">
+        {% with candidates=position.candidates_ordered|default:position.candidates.all %}
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+            <div>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-900 serif-title">{{ position.title }}</h2>
+                <p class="text-slate-600">{{ total_votes }} votes cast</p>
+            </div>
+            <button class="px-3 py-2 md:px-4 md:py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-semibold transition text-sm md:text-base">
+                <svg class="w-4 h-4 md:w-5 md:h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Export Data
+            </button>
+        </div>
+        
+        <div class="space-y-4 md:space-y-6">
+            {% for candidate in candidates %}
+            <div class="border-2 border-slate-200 rounded-xl p-4 md:p-6 hover:border-blue-300 transition">
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-4">
+                    <div class="flex items-center gap-3 md:gap-4">
+                        {% if candidate.photo %}
+                        <img src="{{ candidate.photo.url }}" alt="{{ candidate.full_name }}" class="w-12 h-12 md:w-16 md:h-16 rounded-xl object-cover flex-shrink-0">
+                        {% else %}
+                        <div class="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-slate-300 to-slate-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-6 h-6 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h3 class="text-lg md:text-xl font-bold text-slate-900">{{ candidate.full_name }}</h3>
+                            <p class="text-slate-600 text-sm md:text-base">{{ candidate.department }}, {{ candidate.level }}</p>
+                        </div>
+                    </div>
+                    <div class="text-left sm:text-right">
+                        <p class="text-2xl md:text-3xl font-bold text-blue-900">{{ candidate.vote_percentage|floatformat:1 }}%</p>
+                        <p class="text-sm text-slate-600">{{ candidate.vote_count }} votes</p>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="w-full bg-slate-200 rounded-full h-3 md:h-4">
+                        <div class="bg-gradient-to-r from-blue-900 to-blue-700 h-3 md:h-4 rounded-full transition-all flex items-center justify-end pr-2" style="width: {{ candidate.vote_percentage }}%">
+                            {% if forloop.first %}<span class="text-white text-xs font-bold">Leading</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Vote Distribution Chart -->
+        <div class="mt-8 bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                <h3 class="text-lg font-bold text-white flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Vote Distribution
+                </h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <!-- Chart Container -->
+                    <div class="xl:col-span-2">
+                        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                            <div class="flex items-center justify-center">
+                                <div class="relative">
+                                    <canvas
+                                        id="chart-{{ position.id }}"
+                                        width="350"
+                                        height="350"
+                                        class="max-w-full h-auto"
+                                        data-labels='[{% for candidate in candidates %}"{{ candidate.full_name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
+                                        data-values='[{% for candidate in candidates %}{{ candidate.vote_count }}{% if not forloop.last %},{% endif %}{% endfor %}]'
+                                    ></canvas>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <div class="text-center">
+                                            <div class="text-2xl font-bold text-slate-900">{{ position.candidates.count }}</div>
+                                            <div class="text-sm text-slate-500">Candidates</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend & Stats -->
+                    <div class="space-y-4">
+                        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                            <h4 class="font-semibold text-slate-900 mb-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                                Results Summary
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-600">Total Votes:</span>
+                                    <span class="font-semibold text-slate-900">{{ position.total_votes }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-600">Leading by:</span>
+                                    <span class="font-semibold text-green-600">
+                                        {% if candidates|length > 1 %}
+                                            {% with first=candidates.0 second=candidates.1 %}
+                                                {% if first and second %}
+                                                    {{ first.vote_count }} - {{ second.vote_count }} votes
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Candidate Legend -->
+                        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                            <h4 class="font-semibold text-slate-900 mb-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 4 4 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                                Candidates
+                            </h4>
+                                <div class="space-y-2 max-h-64 overflow-y-auto">
+                                    {% for candidate in candidates %}
+                                <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full" style="background-color: 
+                                            {% if forloop.counter == 1 %}#3B82F6{% elif forloop.counter == 2 %}#EF4444{% elif forloop.counter == 3 %}#10B981{% elif forloop.counter == 4 %}#F59E0B{% elif forloop.counter == 5 %}#8B5CF6{% elif forloop.counter == 6 %}#06B6D4{% elif forloop.counter == 7 %}#F97316{% elif forloop.counter == 8 %}#84CC16{% elif forloop.counter == 9 %}#EC4899{% else %}#6B7280{% endif %}"></div>
+                                        <div class="flex items-center gap-2">
+                                            {% if candidate.photo %}
+                                            <img src="{{ candidate.photo.url }}" alt="{{ candidate.full_name }}" class="w-6 h-6 rounded-full object-cover">
+                                            {% else %}
+                                            <div class="w-6 h-6 bg-gradient-to-br from-slate-300 to-slate-400 rounded-full flex items-center justify-center">
+                                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                </svg>
+                                            </div>
+                                            {% endif %}
+                                            <span class="text-sm font-medium text-slate-900 truncate max-w-24">{{ candidate.full_name }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold text-slate-900">{{ candidate.vote_percentage|floatformat:1 }}%</div>
+                                        <div class="text-xs text-slate-500">{{ candidate.vote_count }}</div>
+                                    </div>
+                                </div>
+                                    {% endfor %}
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+    </div>
+    {% endfor %}
+    
+    <!-- Real-time Activity Feed -->
+    <div class="glass-effect rounded-2xl shadow-lg p-8 fade-in stagger-4">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900 serif-title">Recent Activity</h2>
+            <div class="flex items-center text-sm text-slate-600">
+                <span class="pulse-dot w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+                Auto-refreshing
+            </div>
+        </div>
+        
+        <div class="space-y-4">
+            <div class="flex items-start gap-4 pb-4 border-b border-slate-200">
+                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="text-slate-800 font-medium">New vote recorded</p>
+                    <p class="text-sm text-slate-600">A student just cast their vote</p>
+                    <p class="text-xs text-slate-500 mt-1">Auto-updated</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start gap-4 pb-4 border-b border-slate-200">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="text-slate-800 font-medium">Turnout updates</p>
+                    <p class="text-sm text-slate-600">Live turnout metrics refreshed</p>
+                    <p class="text-xs text-slate-500 mt-1">Auto-updated</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start gap-4">
+                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="text-slate-800 font-medium">System status</p>
+                    <p class="text-sm text-slate-600">Results synchronized</p>
+                    <p class="text-xs text-slate-500 mt-1">Auto-updated</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

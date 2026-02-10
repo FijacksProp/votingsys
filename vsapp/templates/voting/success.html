@@ -18,8 +18,7 @@
             </h1>
             
             <p class="text-lg text-slate-600 mb-8 leading-relaxed stagger-3 fade-in">
-                Thank you for participating in the democratic process. Your vote has been securely recorded 
-                and encrypted in our blockchain-verified system.
+                Thank you for participating in the democratic process. Your vote has been securely recorded.
             </p>
             
             <!-- Vote Details -->
@@ -28,15 +27,19 @@
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-slate-600 font-medium">Vote ID:</span>
-                        <span class="text-slate-900 font-mono font-semibold">EVS-2025-A7B3C9</span>
+                        <span class="text-slate-900 font-mono font-semibold">
+                            {% if record %}{{ record.verification_code }}{% else %}N/A{% endif %}
+                        </span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-600 font-medium">Timestamp:</span>
-                        <span class="text-slate-900 font-semibold">Dec 19, 2025 - 14:32 WAT</span>
+                        <span class="text-slate-900 font-semibold">
+                            {% if record %}{{ record.voted_at|date:"M j, Y - H:i" }}{% else %}N/A{% endif %}
+                        </span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-600 font-medium">Election:</span>
-                        <span class="text-slate-900 font-semibold">Student Union Elections 2025</span>
+                        <span class="text-slate-900 font-semibold">{{ election.title }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-600 font-medium">Status:</span>
@@ -59,9 +62,8 @@
                     <div>
                         <h4 class="font-semibold text-blue-900 mb-1">Security Assurance</h4>
                         <p class="text-blue-800 text-sm leading-relaxed">
-                            Your vote is encrypted and anonymized. No one, including system administrators, 
-                            can trace your specific choices back to you. The blockchain ensures vote integrity 
-                            while maintaining complete voter privacy.
+                            Your vote is recorded and anonymized. No one, including system administrators,
+                            can trace your specific choices back to you.
                         </p>
                     </div>
                 </div>

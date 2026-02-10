@@ -88,8 +88,8 @@
                                 </svg>
                             </button>
                             <div id="menu-{{ candidate.id }}" class="hidden absolute right-0 top-8 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-10">
-                                <button onclick="editCandidate('{{ candidate.id }}', '{{ candidate.full_name }}', '{{ candidate.department }}', '{{ candidate.level }}', '{{ candidate.manifesto }}', '{{ candidate.position.title }}', '{{ candidate.user.matric_number }}', '{{ candidate.position.election.id }}')" class="block w-full text-left px-4 py-2 text-white hover:bg-slate-600">Edit</button>
-                                <button onclick="confirmDeleteCandidate('{{ candidate.id }}', '{{ candidate.full_name }}')" class="block w-full text-left px-4 py-2 text-red-400 hover:bg-red-600">Delete</button>
+                                <button onclick="editCandidate('{{ candidate.id }}', '{{ candidate.full_name|escapejs }}', '{{ candidate.department|escapejs }}', '{{ candidate.level|escapejs }}', '{{ candidate.manifesto|escapejs }}', '{{ candidate.position.title|escapejs }}', '{{ candidate.user.matric_number|escapejs }}', '{{ candidate.position.election.id }}')" class="block w-full text-left px-4 py-2 text-white hover:bg-slate-600">Edit</button>
+                                <button onclick="confirmDeleteCandidate('{{ candidate.id }}', '{{ candidate.full_name|escapejs }}')" class="block w-full text-left px-4 py-2 text-red-400 hover:bg-red-600">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -117,7 +117,7 @@
                     </p>
                     
                     <div class="flex gap-2">
-                        <button onclick="viewCandidateProfile('{{ candidate.id }}', '{{ candidate.full_name }}', '{{ candidate.department }}', '{{ candidate.level }}', '{{ candidate.manifesto }}', '{{ candidate.position.title }}', '{{ candidate.position.election.title }}', '{{ candidate.photo_url|default:"" }}', '{{ candidate.user.matric_number }}')" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition">
+                        <button onclick="viewCandidateProfile('{{ candidate.id }}', '{{ candidate.full_name|escapejs }}', '{{ candidate.department|escapejs }}', '{{ candidate.level|escapejs }}', '{{ candidate.manifesto|escapejs }}', '{{ candidate.position.title|escapejs }}', '{{ candidate.position.election.title|escapejs }}', '{% if candidate.photo %}{{ candidate.photo.url }}{% endif %}', '{{ candidate.user.matric_number|escapejs }}')" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition">
                             View Profile
                         </button>
                         <button class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-semibold transition">
@@ -156,12 +156,13 @@
                 {% csrf_token %}
                 <input type="hidden" name="create" value="1">
                 <div class="text-center mb-4">
-                    <div class="w-32 h-32 bg-slate-700 rounded-xl mx-auto flex items-center justify-center mb-3 cursor-pointer hover:bg-slate-600 transition">
+                    <label for="candidate-photo" class="w-32 h-32 bg-slate-700 rounded-xl mx-auto flex items-center justify-center mb-3 cursor-pointer hover:bg-slate-600 transition">
                         <svg class="w-16 h-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
-                    </div>
+                    </label>
                     <p class="text-sm text-slate-400">Click to upload candidate photo</p>
+                    <input id="candidate-photo" type="file" name="photo" accept="image/*" class="hidden">
                 </div>
                 
                 <div class="grid md:grid-cols-2 gap-4">
@@ -270,12 +271,13 @@
                 <input type="hidden" name="update" value="1">
                 <input type="hidden" name="candidate_id" id="edit-candidate-id">
                 <div class="text-center mb-4">
-                    <div class="w-32 h-32 bg-slate-700 rounded-xl mx-auto flex items-center justify-center mb-3 cursor-pointer hover:bg-slate-600 transition">
+                    <label for="edit-candidate-photo" class="w-32 h-32 bg-slate-700 rounded-xl mx-auto flex items-center justify-center mb-3 cursor-pointer hover:bg-slate-600 transition">
                         <svg class="w-16 h-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                         </svg>
-                    </div>
+                    </label>
                     <p class="text-sm text-slate-400">Click to upload candidate photo</p>
+                    <input id="edit-candidate-photo" type="file" name="photo" accept="image/*" class="hidden">
                 </div>
                 
                 <div class="grid md:grid-cols-2 gap-4">

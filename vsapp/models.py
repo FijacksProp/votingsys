@@ -64,6 +64,10 @@ class Election(models.Model):
     @property
     def total_votes(self):
         return Vote.objects.filter(candidate__position__election=self).count()
+
+    @property
+    def candidate_count(self):
+        return Candidate.objects.filter(position__election=self).count()
     
     @property
     def voter_turnout(self):
@@ -88,6 +92,10 @@ class Position(models.Model):
     
     def __str__(self):
         return f"{self.title} - {self.election.title}"
+
+    @property
+    def total_votes(self):
+        return Vote.objects.filter(candidate__position=self).count()
 
 
 class Candidate(models.Model):

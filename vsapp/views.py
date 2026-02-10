@@ -1,12 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.hashers import make_password, check_password
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count, Prefetch
 from django.http import JsonResponse
 from .models import *
+from functools import wraps
 import hashlib
 import secrets
 import string
@@ -141,12 +144,13 @@ def login_view(request):
             user = authenticate(request, username=user.username, password=password)
             if user:
                 if user.user_type == 'voter':
-                    login(request, user)
                     # Generate OTP
                     otp = ''.join(secrets.choice(string.digits) for _ in range(6))
-                    user.otp_code = otp
+                    user.otp_code = make_password(otp)
                     user.otp_created_at = timezone.now()
                     user.save()
+                    request.session['pending_otp_user_id'] = str(user.id)
+                    request.session.pop('otp_verified', None)
                     messages.success(request, f'OTP sent to your registered email/phone: {otp}')
                     return redirect('otp_verify')
                 else:
@@ -160,24 +164,51 @@ def login_view(request):
 
 def otp_verify(request):
     """OTP verification"""
+    pending_user_id = request.session.get('pending_otp_user_id')
+    if not pending_user_id:
+        messages.error(request, 'Session expired. Please login again.')
+        return redirect('login')
+
+    try:
+        pending_user = User.objects.get(id=pending_user_id)
+    except User.DoesNotExist:
+        messages.error(request, 'User not found. Please login again.')
+        request.session.pop('pending_otp_user_id', None)
+        return redirect('login')
+
     if request.method == 'POST':
         otp = request.POST.get('otp')
-        if request.user.otp_code == otp:
+        if pending_user.otp_code and check_password(otp, pending_user.otp_code):
             # Check if OTP is not expired (5 minutes)
-            if timezone.now() - request.user.otp_created_at < timezone.timedelta(minutes=5):
-                request.user.otp_code = ''
-                request.user.save()
+            if pending_user.otp_created_at and timezone.now() - pending_user.otp_created_at < timezone.timedelta(minutes=5):
+                pending_user.otp_code = ''
+                pending_user.save()
+                login(request, pending_user)
+                request.session.pop('pending_otp_user_id', None)
+                request.session['otp_verified'] = True
                 return redirect('vote')
             else:
                 messages.error(request, 'OTP expired. Please login again.')
-                logout(request)
+                request.session.pop('pending_otp_user_id', None)
                 return redirect('login')
         else:
             messages.error(request, 'Invalid OTP.')
     
     return render(request, 'auth/otp_verify.html')
 
+
+def otp_required(view_func):
+    """Ensure OTP was verified in this session."""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not request.session.get('otp_verified'):
+            messages.error(request, 'Please verify OTP to continue.')
+            return redirect('otp_verify')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
 @login_required
+@otp_required
 def vote_with_election(request, election_id):
     """Voting dashboard for specific election"""
     if request.user.user_type != 'voter':
@@ -192,9 +223,9 @@ def vote_with_election(request, election_id):
         return redirect('vote')
 
     # Check if user has already voted in this election
-    if VoterRecord.objects.filter(voter=request.user, election=election).exists():
-        messages.info(request, 'You have already voted in this election.')
-        return redirect('live_results')
+    existing_record = VoterRecord.objects.filter(voter=request.user, election=election).first()
+    if existing_record:
+        return redirect('already_voted', election_id=election.id)
 
     positions = election.positions.all().prefetch_related('candidates')
 
@@ -220,22 +251,37 @@ def vote_with_election(request, election_id):
         positions_data.append(position_dict)
 
     if request.method == 'POST':
+        now = timezone.now()
+        if not (election.start_date <= now <= election.end_date and election.status == 'active'):
+            messages.error(request, 'Voting is closed for this election.')
+            return redirect('vote_with_election', election_id=election.id)
+
         # Process vote
         with transaction.atomic():
+            selections_made = 0
             for position in positions:
-                candidate_id = request.POST.get(f'position_{position.id}')
-                if candidate_id:
-                    candidate = get_object_or_404(Candidate, id=candidate_id, position=position)
+                selected_ids = request.POST.getlist(f'position_{position.id}')
+                if not selected_ids:
+                    continue
+                if position.max_votes and len(selected_ids) > position.max_votes:
+                    messages.error(request, f"You can select up to {position.max_votes} candidate(s) for {position.title}.")
+                    return redirect('vote_with_election', election_id=election.id)
 
-                    # Create vote hash (simplified blockchain simulation)
+                for candidate_id in selected_ids:
+                    candidate = get_object_or_404(Candidate, id=candidate_id, position=position)
+                    # Create vote hash (non-reversible, anonymized)
                     vote_data = f"{request.user.id}-{candidate.id}-{timezone.now()}"
                     vote_hash = hashlib.sha256(vote_data.encode()).hexdigest()
-
                     Vote.objects.create(
                         candidate=candidate,
                         vote_hash=vote_hash,
                         ip_address=request.META.get('REMOTE_ADDR')
                     )
+                    selections_made += 1
+
+            if selections_made == 0:
+                messages.error(request, 'Please select at least one candidate before submitting.')
+                return redirect('vote_with_election', election_id=election.id)
 
             # Record voter participation
             verification_code = secrets.token_urlsafe(16)
@@ -254,19 +300,20 @@ def vote_with_election(request, election_id):
                 user_agent=request.META.get('HTTP_USER_AGENT')
             )
 
-            messages.success(request, f'Vote submitted successfully! Verification code: {verification_code}')
-            return redirect('vote_success')
+            messages.success(request, f'Vote submitted successfully!')
+            return redirect('vote_success', election_id=election.id)
 
     return render(request, 'voting/vote.html', {
         'election': election,
         'positions': positions,
         'positions_data': positions_data,
-        'is_active': election.status == 'active' and timezone.now() >= election.start_date,
+        'is_active': election.status == 'active' and election.start_date <= timezone.now() <= election.end_date,
         'now': timezone.now(),
         'end_timestamp': int(election.end_date.timestamp() * 1000),
     })
 
 @login_required
+@otp_required
 def vote(request):
     """Voting dashboard"""
     if request.user.user_type != 'voter':
@@ -288,7 +335,7 @@ def vote(request):
         has_voted = VoterRecord.objects.filter(voter=request.user, election=election).exists()
         elections_with_status.append({
             'election': election,
-            'is_active': election.status == 'active' and now >= election.start_date,
+            'is_active': election.status == 'active' and election.start_date <= now <= election.end_date,
             'has_voted': has_voted
         })
     return render(request, 'voting/election_select.html', {
@@ -296,9 +343,25 @@ def vote(request):
     })
 
 @login_required
-def vote_success(request):
+@otp_required
+def vote_success(request, election_id):
     """Vote confirmation page"""
-    return render(request, 'voting/success.html')
+    election = get_object_or_404(Election, id=election_id)
+    record = VoterRecord.objects.filter(voter=request.user, election=election).first()
+    return render(request, 'voting/success.html', {
+        'election': election,
+        'record': record,
+    })
+
+@login_required
+@otp_required
+def already_voted(request, election_id):
+    election = get_object_or_404(Election, id=election_id)
+    record = VoterRecord.objects.filter(voter=request.user, election=election).first()
+    return render(request, 'voting/already_voted.html', {
+        'election': election,
+        'record': record,
+    })
 
 def live_results(request):
     """Live results dashboard"""
@@ -324,8 +387,14 @@ def live_results(request):
     else:
         selected_election = active_elections.first()
         
-    # Get positions and results for selected election
-    positions = selected_election.positions.all().prefetch_related('candidates__votes')
+    # Get positions and results for selected election (order candidates by votes desc)
+    candidates_qs = Candidate.objects.annotate(
+        vote_count_agg=Count('votes')
+    ).order_by('-vote_count_agg', 'full_name')
+    positions = selected_election.positions.all().prefetch_related(
+        Prefetch('candidates', queryset=candidates_qs, to_attr='candidates_ordered'),
+        'candidates__votes'
+    )
         
     # Calculate totals
     total_voters = User.objects.filter(user_type='voter', is_active=True).count()
@@ -354,7 +423,11 @@ def live_results(request):
             position_dict['candidates'].append(candidate_dict)
         positions_data.append(position_dict)
 
-    return render(request, 'results/live_results.html', {
+    template_name = 'results/live_results.html'
+    if request.headers.get('HX-Request'):
+        template_name = 'results/partials/live_results_content.html'
+
+    return render(request, template_name, {
         'active_elections': active_elections,
         'selected_election': selected_election,
         'positions': positions,
@@ -418,6 +491,7 @@ def admin_dashboard(request):
     
     system_health = min(100.0, max(0.0, health_score))
     
+    recent_audits = AuditLog.objects.select_related('user').all()[:6]
     return render(request, 'admin/dashboard.html', {
         'elections': elections,
         'total_voters': total_voters,
@@ -426,7 +500,8 @@ def admin_dashboard(request):
         'system_health': system_health,
         'total_users': total_users,
         'active_users': active_users,
-        'recent_votes': recent_votes
+        'recent_votes': recent_votes,
+        'recent_audits': recent_audits,
     })
 
 @login_required
@@ -438,19 +513,36 @@ def admin_elections(request):
 
     elections = Election.objects.all()
 
+    def _parse_dt(value):
+        dt = parse_datetime(value) if value else None
+        if dt and timezone.is_naive(dt):
+            dt = timezone.make_aware(dt, timezone.get_current_timezone())
+        return dt
+
     if request.method == 'POST':
         if 'create' in request.POST:
             title = request.POST.get('title')
             description = request.POST.get('description')
             start_date = request.POST.get('start_date')
             end_date = request.POST.get('end_date')
-            
+            status = request.POST.get('status', 'draft')
+            start_dt = _parse_dt(start_date)
+            end_dt = _parse_dt(end_date)
+            if not start_dt or not end_dt:
+                messages.error(request, 'Invalid start or end date.')
+                return redirect('admin_elections')
+            if end_dt <= start_dt:
+                messages.error(request, 'End date must be after start date.')
+                return redirect('admin_elections')
+            if status == 'active' and start_dt > timezone.now():
+                start_dt = timezone.now()
+
             Election.objects.create(
                 title=title,
                 description=description,
-                start_date=start_date,
-                end_date=end_date,
-                status='active',
+                start_date=start_dt,
+                end_date=end_dt,
+                status=status,
                 created_by=request.user
             )
             messages.success(request, 'Election created successfully.')
@@ -470,10 +562,21 @@ def admin_elections(request):
             status = request.POST.get('status')
             
             election = get_object_or_404(Election, id=election_id)
+            start_dt = _parse_dt(start_date)
+            end_dt = _parse_dt(end_date)
+            if not start_dt or not end_dt:
+                messages.error(request, 'Invalid start or end date.')
+                return redirect('admin_elections')
+            if end_dt <= start_dt:
+                messages.error(request, 'End date must be after start date.')
+                return redirect('admin_elections')
+            if status == 'active' and start_dt > timezone.now():
+                start_dt = timezone.now()
+
             election.title = title
             election.description = description
-            election.start_date = start_date
-            election.end_date = end_date
+            election.start_date = start_dt
+            election.end_date = end_dt
             election.status = status
             election.save()
             messages.success(request, 'Election updated successfully.')
@@ -649,5 +752,7 @@ def logout_view(request):
             user_agent=request.META.get('HTTP_USER_AGENT')
         )
     logout(request)
+    request.session.pop('otp_verified', None)
+    request.session.pop('pending_otp_user_id', None)
     return redirect('index')
 

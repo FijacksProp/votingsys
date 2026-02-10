@@ -29,7 +29,7 @@
                 </div>
                 <div class="bg-emerald-50 rounded-xl p-4">
                     <p class="text-sm text-emerald-900 font-semibold mb-1">Voter Status</p>
-                    <p class="text-lg font-bold text-emerald-900">Verified ✓</p>
+                    <p class="text-lg font-bold text-emerald-900">Verified</p>
                 </div>
                 <div class="bg-amber-50 rounded-xl p-4">
                     <p class="text-sm text-amber-900 font-semibold mb-1">Time Remaining</p>
@@ -67,13 +67,22 @@
             <div class="glass-effect rounded-2xl shadow-lg p-8 mb-8 fade-in stagger-{{ forloop.counter|add:2 }}">
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-slate-900 mb-2 serif-title">{{ position.title }}</h2>
-                    <p class="text-slate-600">{{ position.description|default:"Select one candidate" }}</p>
+                    <p class="text-slate-600">
+                        {{ position.description|default:"Select candidate(s)" }}
+                        {% if position.max_votes > 1 %}
+                            (Up to {{ position.max_votes }})
+                        {% endif %}
+                    </p>
                 </div>
                 
                 <div class="space-y-4">
                     {% for candidate in position.candidates.all %}
                     <label class="block cursor-pointer">
-                        <input type="radio" name="position_{{ position.id }}" value="{{ candidate.id }}" class="peer hidden" required>
+                        {% if position.max_votes > 1 %}
+                            <input type="checkbox" name="position_{{ position.id }}" value="{{ candidate.id }}" class="peer hidden">
+                        {% else %}
+                            <input type="radio" name="position_{{ position.id }}" value="{{ candidate.id }}" class="peer hidden">
+                        {% endif %}
                         <div class="border-2 border-slate-200 peer-checked:border-blue-900 peer-checked:bg-blue-50 rounded-xl p-6 transition hover:shadow-lg">
                             <div class="flex items-start gap-6">
                                 {% if candidate.photo %}
@@ -191,21 +200,23 @@ function showConfirmModal() {
     let hasSelection = false;
     
     positions.forEach(position => {
-        const radio = document.querySelector(`input[name="position_${position.id}"]:checked`);
-        if (radio) {
+        const inputs = document.querySelectorAll(`input[name="position_${position.id}"]:checked`);
+        if (inputs.length > 0) {
             hasSelection = true;
-            const candidateId = radio.value;
-            const candidate = position.candidates.find(c => c.id == candidateId);
-            
-            const li = document.createElement('li');
-            li.className = 'flex items-center text-slate-700';
-            li.innerHTML = `
-                <svg class="w-4 h-4 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                <span><strong>${position.title}:</strong> ${candidate.full_name}</span>
-            `;
-            selectionsList.appendChild(li);
+            inputs.forEach(input => {
+                const candidateId = input.value;
+                const candidate = position.candidates.find(c => c.id == candidateId);
+                
+                const li = document.createElement('li');
+                li.className = 'flex items-center text-slate-700';
+                li.innerHTML = `
+                    <svg class="w-4 h-4 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong>${position.title}:</strong> ${candidate.full_name}</span>
+                `;
+                selectionsList.appendChild(li);
+            });
         }
     });
     
